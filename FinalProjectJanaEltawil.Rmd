@@ -1,0 +1,193 @@
+---
+title: "Final Project: China Democracy rating and WTO accession"
+author: "Jana Eltawil"
+date: "2023-12-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, out.width="95%")
+```
+
+# Uploading the data and subsetting 
+
+```{r}
+## Subsetting the data to only include China and the years I'm interested in for my analysis
+
+VDEM <- read.csv("V-Dem.csv")
+
+China <- subset(VDEM, country_name == "China")
+
+
+
+Chinayears <- subset(China, year >= 1993 & year <= 2022)
+
+
+```
+
+
+# Cronbach's Alpha to verify internal consistency of the data
+
+```{r}
+## Cronbach Alpha calculation, summation of rows, and inclusion of new exhaustive rows into my data
+library(ltm)
+
+
+## Personal Integrity index
+Personalintegrity <- Chinayears[,c("v2cltort", "v2clkill", "v2clslavem", "v2clslavef")]
+cronbach.alpha(Personalintegrity)
+Personalintegrity <- rowSums(Chinayears[,c("v2cltort", "v2clkill", "v2clslavem", "v2clslavef")])
+Chinayears$Personalintegrity <- Personalintegrity
+
+## Political Liberties 
+Politicalliberties <- Chinayears[,c("v2cldiscm", "v2cldiscw", "v2clacfree", "v2clfmove")]
+cronbach.alpha(Politicalliberties)
+Politicalliberties <- rowSums(Chinayears[,c("v2cldiscm", "v2cldiscw", "v2clacfree", "v2clfmove")])
+Chinayears$Politicalliberties <- Politicalliberties
+
+## Media Censorship 
+
+Mediacensorship <- Chinayears[,c("v2mecenefm", "v2mecenefi", "v2mecenefibin", "v2mecrit", 
+                       "v2merange", "v2meharjrn", "v2meslfcen", "v2mebias", "v2mecorrpt")]
+cronbach.alpha(Mediacensorship)
+
+Mediacensorship <- rowSums(Chinayears[,c("v2mecenefm", "v2mecenefi", "v2mecenefibin", "v2mecrit", 
+                                         "v2merange", "v2meharjrn", "v2meslfcen", "v2mebias", "v2mecorrpt")])
+Chinayears$Mediacensorship <- Mediacensorship
+
+## Property Rights
+PropertyRights <- Chinayears$v2clstown
+Chinayears$PropertyRights <- PropertyRights
+
+```
+
+
+# Initial Visualization for each index using barplots
+
+```{r}
+## Personal Integrity
+library(ggplot2)
+
+personalintegrity_plot <- ggplot(Chinayears, aes(x = year, y = Personalintegrity)) +
+  geom_line() + 
+  geom_vline(xintercept = 2001, linetype = "dashed", color = "red") +
+  labs(x = "Year", y = "Personal Integrity Score") +
+  ggtitle("Personal Integrity vs. Years Post WTO Accession")
+
+print(personalintegrity_plot)
+
+#### Political Liberties
+
+Politicalliberties_plot <- ggplot(Chinayears, aes(x = year, y = Politicalliberties)) +
+  geom_line() + 
+  geom_vline(xintercept = 2001, linetype = "dashed", color = "red") +
+  labs(x = "Year", y = "Political Liberties Score") +
+  ggtitle("Political Liberties vs. Years Post WTO Accession")
+
+print(Politicalliberties_plot)
+
+### Media Censorship 
+
+Mediacensorship_plot <- ggplot(Chinayears, aes(x = year, y = Mediacensorship)) +
+  geom_line() + 
+  geom_vline(xintercept = 2001, linetype = "dashed", color = "red") +
+  labs(x = "Year", y = "Media Censorship Score") +
+  ggtitle("Media Censorship vs. Years Post WTO Accession")
+
+print(Mediacensorship_plot)
+
+## Property Rights
+
+PropertyRights_plot <- ggplot(Chinayears, aes(x = year, y = PropertyRights)) +
+  geom_line() + 
+  geom_vline(xintercept = 2001, linetype = "dashed", color = "red") +
+  labs(x = "Year", y = "Property Rights") +
+  ggtitle("Property Rights vs. Years Post WTO Accession")
+
+print(PropertyRights_plot)
+
+###
+
+library(ggplot2)
+
+# Combined plot with different lines for each index
+combined_plot <- ggplot() +
+  geom_line(data = Chinayears, aes(x = year, y = Personalintegrity, color = "Personal Integrity")) +
+  geom_line(data = Chinayears, aes(x = year, y = Politicalliberties, color = "Political Liberties")) +
+  geom_line(data = Chinayears, aes(x = year, y = Mediacensorship, color = "Media Censorship")) +
+  geom_line(data = Chinayears, aes(x = year, y = PropertyRights, color = "Property Rights")) +
+  geom_vline(xintercept = 2001, linetype = "dashed", color = "red") +
+  labs(x = "Year", y = "Score", color = "Index") +
+  ggtitle("Index Scores vs. Years Post WTO Accession")
+
+print(combined_plot)
+
+
+```
+
+
+
+# Before and After Comparison
+
+```{r}
+## Subsetting the data pre(1993-2000) and post (2001-2022) WTO accession
+
+preWTO <- subset(Chinayears, year < 2001)
+postWTO <- subset(Chinayears, year >= 2001)
+
+## Difference in means for each indicator 
+
+mean(postWTO$Personalintegrity) - mean(preWTO$Personalintegrity)
+
+mean(postWTO$Politicalliberties) - mean(preWTO$Politicalliberties)
+
+mean(postWTO$Mediacensorship) - mean(preWTO$Mediacensorship)
+
+
+mean(postWTO$PropertyRights) - mean(preWTO$PropertyRights)
+
+```
+
+
+# Placebo Test
+
+```{r}
+## Placebo test using China pre WTO accession, range 1993-2000
+## Could only use that range to account for internet restrictions (internet related variables only available starting from 1993)
+
+early_preWTO <- subset(preWTO, year <= 1996)
+late_preWTO <- subset(preWTO, year > 1996)
+
+
+mean(late_preWTO$Personalintegrity) - mean(early_preWTO$Personalintegrity)
+
+mean(late_preWTO$Politicalliberties) - mean(early_preWTO$Politicalliberties)
+
+mean(late_preWTO$Mediacensorship) - mean(early_preWTO$Mediacensorship)
+
+
+mean(late_preWTO$PropertyRights) - mean(early_preWTO$PropertyRights)
+```
+
+
+# Hypothesis Testing
+
+```{r}
+## use this space for problem 6 code assessing fairness
+personalintegritytest <- t.test(postWTO$Personalintegrity, preWTO$Personalintegrity)
+
+Politicallibertiestest <- t.test(postWTO$Politicalliberties, preWTO$Politicalliberties)
+
+Mediacensorshiptest <- t.test(postWTO$Mediacensorship, preWTO$Mediacensorship)
+
+PropertyRightstest <- t.test(postWTO$PropertyRights, preWTO$PropertyRights)
+
+personalintegritytest
+Politicallibertiestest
+Mediacensorshiptest
+PropertyRightstest
+```
+
+
+
+
